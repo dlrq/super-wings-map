@@ -1,0 +1,192 @@
+[
+  {
+    "id": "beijing",
+    "nameZh": "北京",
+    "nameEn": "Beijing",
+    "countryZh": "中国",
+    "region": "亚洲",
+    "coordinates": { "lat": 39.9042, "lng": 116.4074 },
+    "episode": {
+      "season": 1,
+      "episode": 3,
+      "titleZh": "长城边的特别派送",
+      "summaryZh": "一次送达任务把孩子们带到长城附近，大家一起认识古老建筑和团队协作。"
+    },
+    "tags": ["历史", "城市", "建筑"],
+    "funFactZh": "北京拥有中轴线、胡同和长城等多层次文化景观，适合从地图上观察城市和山地的关系。"
+  },
+  {
+    "id": "tokyo",
+    "nameZh": "东京",
+    "nameEn": "Tokyo",
+    "countryZh": "日本",
+    "region": "亚洲",
+    "coordinates": { "lat": 35.6762, "lng": 139.6503 },
+    "episode": {
+      "season": 2,
+      "episode": 6,
+      "titleZh": "樱花列车出发",
+      "summaryZh": "小伙伴们在东京寻找错过的列车，沿途看到现代城市和传统节庆。"
+    },
+    "tags": ["城市", "交通", "节日"],
+    "funFactZh": "东京是世界上人口密度很高的大都市之一，轨道交通网络非常发达。"
+  },
+  {
+    "id": "cairo",
+    "nameZh": "开罗",
+    "nameEn": "Cairo",
+    "countryZh": "埃及",
+    "region": "非洲",
+    "coordinates": { "lat": 30.0444, "lng": 31.2357 },
+    "episode": {
+      "season": 1,
+      "episode": 9,
+      "titleZh": "金字塔的影子谜题",
+      "summaryZh": "大家根据太阳和影子的线索完成任务，顺便了解沙漠与古代文明。"
+    },
+    "tags": ["历史", "沙漠", "文明"],
+    "funFactZh": "开罗靠近尼罗河，河流为沙漠地区带来了农业和城市发展的条件。"
+  },
+  {
+    "id": "paris",
+    "nameZh": "巴黎",
+    "nameEn": "Paris",
+    "countryZh": "法国",
+    "region": "欧洲",
+    "coordinates": { "lat": 48.8566, "lng": 2.3522 },
+    "episode": {
+      "season": 2,
+      "episode": 11,
+      "titleZh": "铁塔下的画展",
+      "summaryZh": "一次艺术展准备遇到小麻烦，孩子们一起完成路线规划和作品保护。"
+    },
+    "tags": ["艺术", "城市", "建筑"],
+    "funFactZh": "塞纳河穿过巴黎，许多著名博物馆和建筑都分布在河岸附近。"
+  },
+  {
+    "id": "london",
+    "nameZh": "伦敦",
+    "nameEn": "London",
+    "countryZh": "英国",
+    "region": "欧洲",
+    "coordinates": { "lat": 51.5072, "lng": -0.1276 },
+    "episode": {
+      "season": 3,
+      "episode": 4,
+      "titleZh": "雾都钟声",
+      "summaryZh": "大家在钟楼附近追踪一件重要包裹，认识城市天气和公共交通。"
+    },
+    "tags": ["城市", "交通", "天气"],
+    "funFactZh": "伦敦位于泰晤士河两岸，河流和桥梁塑造了城市交通格局。"
+  },
+  {
+    "id": "sydney",
+    "nameZh": "悉尼",
+    "nameEn": "Sydney",
+    "countryZh": "澳大利亚",
+    "region": "大洋洲",
+    "coordinates": { "lat": -33.8688, "lng": 151.2093 },
+    "episode": {
+      "season": 3,
+      "episode": 8,
+      "titleZh": "海港音乐会",
+      "summaryZh": "伙伴们在海港边帮助准备表演，认识海湾、桥梁和海洋动物保护。"
+    },
+    "tags": ["海洋", "城市", "艺术"],
+    "funFactZh": "悉尼拥有天然海港，城市生活和海岸景观联系紧密。"
+  },
+  {
+    "id": "rio",
+    "nameZh": "里约热内卢",
+    "nameEn": "Rio de Janeiro",
+    "countryZh": "巴西",
+    "region": "南美洲",
+    "coordinates": { "lat": -22.9068, "lng": -43.1729 },
+    "episode": {
+      "season": 2,
+      "episode": 15,
+      "titleZh": "彩色巡游路线",
+      "summaryZh": "节日巡游前，大家一起规划路线并学习尊重不同文化的庆祝方式。"
+    },
+    "tags": ["节日", "海洋", "山地"],
+    "funFactZh": "里约有山、海湾和城市相邻的独特地形，从空中看层次很明显。"
+  },
+  {
+    "id": "new-york",
+    "nameZh": "纽约",
+    "nameEn": "New York",
+    "countryZh": "美国",
+    "region": "北美洲",
+    "coordinates": { "lat": 40.7128, "lng": -74.006 },
+    "episode": {
+      "season": 1,
+      "episode": 12,
+      "titleZh": "高楼间的快递",
+      "summaryZh": "小队在高楼林立的街区完成派送，体验网格道路和城市导航。"
+    },
+    "tags": ["城市", "建筑", "交通"],
+    "funFactZh": "曼哈顿许多街道呈网格状，适合用地图理解街区编号和方向。"
+  },
+  {
+    "id": "machu-picchu",
+    "nameZh": "马丘比丘",
+    "nameEn": "Machu Picchu",
+    "countryZh": "秘鲁",
+    "region": "南美洲",
+    "coordinates": { "lat": -13.1631, "lng": -72.545 },
+    "episode": {
+      "season": 4,
+      "episode": 2,
+      "titleZh": "云端古城任务",
+      "summaryZh": "大家沿着山路寻找遗失物，认识高海拔、梯田和古城保护。"
+    },
+    "tags": ["山地", "历史", "自然"],
+    "funFactZh": "马丘比丘位于安第斯山脉中，地形陡峭，天气变化也很快。"
+  },
+  {
+    "id": "cape-town",
+    "nameZh": "开普敦",
+    "nameEn": "Cape Town",
+    "countryZh": "南非",
+    "region": "非洲",
+    "coordinates": { "lat": -33.9249, "lng": 18.4241 },
+    "episode": {
+      "season": 4,
+      "episode": 7,
+      "titleZh": "桌山风筝日",
+      "summaryZh": "一场风筝活动需要判断风向，大家学习海风、山地和安全合作。"
+    },
+    "tags": ["山地", "海洋", "天气"],
+    "funFactZh": "开普敦靠近桌山和海岸，山体会影响云雾和风的形成。"
+  },
+  {
+    "id": "venice",
+    "nameZh": "威尼斯",
+    "nameEn": "Venice",
+    "countryZh": "意大利",
+    "region": "欧洲",
+    "coordinates": { "lat": 45.4408, "lng": 12.3155 },
+    "episode": {
+      "titleZh": "水上小路的邀请函",
+      "summaryZh": "小伙伴们在水巷之间送达邀请函，认识船只交通和保护水城的方法。"
+    },
+    "tags": ["水城", "交通", "历史"],
+    "funFactZh": "威尼斯由许多岛屿和水道组成，船在当地交通中扮演重要角色。"
+  },
+  {
+    "id": "mumbai",
+    "nameZh": "孟买",
+    "nameEn": "Mumbai",
+    "countryZh": "印度",
+    "region": "亚洲",
+    "coordinates": { "lat": 19.076, "lng": 72.8777 },
+    "episode": {
+      "season": 5,
+      "episode": 5,
+      "titleZh": "雨季里的舞台",
+      "summaryZh": "雨季来临前，大家帮助准备社区演出并学习季风和城市排水。"
+    },
+    "tags": ["城市", "天气", "艺术"],
+    "funFactZh": "孟买受季风影响明显，每年雨季会带来充沛降水。"
+  }
+]
