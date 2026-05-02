@@ -9,12 +9,28 @@ type GlobeExplorerProps = {
   onSelectLocation: (id: string) => void;
 };
 
+type MarkerObjects = {
+  marker: THREE.Mesh<THREE.SphereGeometry, THREE.MeshBasicMaterial>;
+  markerMaterial: THREE.MeshBasicMaterial;
+  pulseMaterial: THREE.MeshBasicMaterial;
+};
+
+type GlobeSceneState = {
+  updateSelection: (id: string) => void;
+};
+
 const earthRadius = 2.18;
 const markerRadius = 0.055;
 const earthTextureUrl = "/assets/earth-blue-marble-july.jpg";
 
 export function GlobeExplorer({ locations, selectedLocationId, onSelectLocation }: GlobeExplorerProps) {
   const mountRef = useRef<HTMLDivElement | null>(null);
+  const sceneStateRef = useRef<GlobeSceneState | null>(null);
+  const selectedLocationIdRef = useRef(selectedLocationId);
+  const onSelectLocationRef = useRef(onSelectLocation);
+
+  selectedLocationIdRef.current = selectedLocationId;
+  onSelectLocationRef.current = onSelectLocation;
 
   useEffect(() => {
     const mount = mountRef.current;
@@ -50,10 +66,9 @@ export function GlobeExplorer({ locations, selectedLocationId, onSelectLocation 
     rootGroup.rotation.x = -0.18;
     rootGroup.rotation.y = -0.62;
     scene.add(rootGroup);
+    let focusTargetQuaternion: THREE.Quaternion | null = null;
 
     const markerByObjectId = new Map<number, string>();
-    const selectedLocation = locations.find((location) => location.id === selectedLocationId) ?? locations[0];
-    const selectedPoint = selectedLocation ? latLngToVector3(selectedLocation.coordinates.lat, selectedLocation.coordinates.lng, earthRadius) : null;
 
     const ambientLight = new THREE.AmbientLight(0xb9eaff, 1.4);
     const keyLight = new THREE.DirectionalLight(0xffffff, 2.6);
@@ -105,19 +120,63 @@ export function GlobeExplorer({ locations, selectedLocationId, onSelectLocation 
       },
     );
 
-    const grid = new THREE.Mesh(
-      new THREE.SphereGeometry(earthRadius + 0.006, 48, 28),
-      new THREE.MeshBasicMaterial({
-        color: 0xd7f6ff,
-        wireframe: true,
-        transparent: true,
-        opacity: 0.16,
-      }),
-    );
-    rootGroup.add(grid);
-
     const routes = new THREE.Group();
-    if (selectedLocation && selectedPoint) {
+    rootGroup.add(routes);
+
+    const markers = new THREE.Group();
+    const markerObjectsByLocationId = new Map<string, MarkerObjects>();
+    for (const location of locations) {
+      const point = latLngToVector3(location.coordinates.lat, location.coordinates.lng, earthRadius + 0.05);
+      const markerMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff });
+      const marker = new THREE.Mesh(
+        new THREE.SphereGeometry(markerRadius, 20, 20),
+        markerMaterial,
+      );
+      marker.position.copy(point);
+      marker.userData.locationId = location.id;
+      markerByObjectId.set(marker.id, location.id);
+      markers.add(marker);
+
+      const pulseMaterial = new THREE.MeshBasicMaterial({
+        color: 0x8be9ff,
+        transparent: true,
+        opacity: 0.38,
+        side: THREE.DoubleSide,
+      });
+      const pulse = new THREE.Mesh(
+        new THREE.RingGeometry(markerRadius * 1.7, markerRadius * 2.55, 36),
+        pulseMaterial,
+      );
+      pulse.position.copy(point.clone().multiplyScalar(1.002));
+      pulse.lookAt(new THREE.Vector3(0, 0, 0));
+      pulse.userData.locationId = location.id;
+      markerByObjectId.set(pulse.id, location.id);
+      markers.add(pulse);
+      markerObjectsByLocationId.set(location.id, { marker, markerMaterial, pulseMaterial });
+    }
+    rootGroup.add(markers);
+
+    const updateSelection = (id: string) => {
+      const selectedLocation = locations.find((location) => location.id === id) ?? locations[0];
+
+      for (const [locationId, markerObjects] of markerObjectsByLocationId) {
+        const isSelected = locationId === selectedLocation?.id;
+        markerObjects.marker.scale.setScalar(isSelected ? 1.55 : 1);
+        markerObjects.markerMaterial.color.set(isSelected ? 0xffcf4a : 0xffffff);
+        markerObjects.pulseMaterial.color.set(isSelected ? 0xffcf4a : 0x8be9ff);
+        markerObjects.pulseMaterial.opacity = isSelected ? 0.8 : 0.38;
+      }
+
+      disposeRouteChildren(routes);
+      if (!selectedLocation) {
+        return;
+      }
+
+      const selectedPoint = latLngToVector3(
+        selectedLocation.coordinates.lat,
+        selectedLocation.coordinates.lng,
+        earthRadius,
+      );
       for (const location of locations) {
         if (location.id === selectedLocation.id) {
           continue;
@@ -125,38 +184,12 @@ export function GlobeExplorer({ locations, selectedLocationId, onSelectLocation 
         const target = latLngToVector3(location.coordinates.lat, location.coordinates.lng, earthRadius);
         routes.add(createRoute(selectedPoint, target));
       }
-    }
-    rootGroup.add(routes);
 
-    const markers = new THREE.Group();
-    for (const location of locations) {
-      const point = latLngToVector3(location.coordinates.lat, location.coordinates.lng, earthRadius + 0.05);
-      const isSelected = location.id === selectedLocationId;
-      const marker = new THREE.Mesh(
-        new THREE.SphereGeometry(isSelected ? markerRadius * 1.55 : markerRadius, 20, 20),
-        new THREE.MeshBasicMaterial({ color: isSelected ? 0xffcf4a : 0xffffff }),
-      );
-      marker.position.copy(point);
-      marker.userData.locationId = location.id;
-      markerByObjectId.set(marker.id, location.id);
-      markers.add(marker);
-
-      const pulse = new THREE.Mesh(
-        new THREE.RingGeometry(markerRadius * 1.7, markerRadius * 2.55, 36),
-        new THREE.MeshBasicMaterial({
-          color: isSelected ? 0xffcf4a : 0x8be9ff,
-          transparent: true,
-          opacity: isSelected ? 0.8 : 0.38,
-          side: THREE.DoubleSide,
-        }),
-      );
-      pulse.position.copy(point.clone().multiplyScalar(1.002));
-      pulse.lookAt(new THREE.Vector3(0, 0, 0));
-      pulse.userData.locationId = location.id;
-      markerByObjectId.set(pulse.id, location.id);
-      markers.add(pulse);
-    }
-    rootGroup.add(markers);
+      controls.autoRotate = false;
+      focusTargetQuaternion = getFocusQuaternion(selectedLocation, camera);
+    };
+    sceneStateRef.current = { updateSelection };
+    updateSelection(selectedLocationIdRef.current);
 
     const labels = createLabelLayer(mount, locations, rootGroup, camera);
     const raycaster = new THREE.Raycaster();
@@ -176,6 +209,13 @@ export function GlobeExplorer({ locations, selectedLocationId, onSelectLocation 
 
     const animate = () => {
       controls.update();
+      if (focusTargetQuaternion) {
+        rootGroup.quaternion.slerp(focusTargetQuaternion, 0.085);
+        if (rootGroup.quaternion.angleTo(focusTargetQuaternion) < 0.002) {
+          rootGroup.quaternion.copy(focusTargetQuaternion);
+          focusTargetQuaternion = null;
+        }
+      }
       routes.children.forEach((child, index) => {
         const material = (child as THREE.Line).material as THREE.LineBasicMaterial;
         material.opacity = 0.22 + Math.sin(Date.now() * 0.002 + index) * 0.08;
@@ -221,7 +261,9 @@ export function GlobeExplorer({ locations, selectedLocationId, onSelectLocation 
       if (hit) {
         const id = hit.object.userData.locationId ?? markerByObjectId.get(hit.object.id);
         if (typeof id === "string") {
-          onSelectLocation(id);
+          if (id !== selectedLocationIdRef.current) {
+            onSelectLocationRef.current(id);
+          }
         }
       }
     };
@@ -242,6 +284,9 @@ export function GlobeExplorer({ locations, selectedLocationId, onSelectLocation 
       renderer.domElement.removeEventListener("pointercancel", handlePointerUp);
       controls.dispose();
       labels.destroy();
+      if (sceneStateRef.current?.updateSelection === updateSelection) {
+        sceneStateRef.current = null;
+      }
       scene.traverse((object) => {
         if (object instanceof THREE.Mesh || object instanceof THREE.Line) {
           object.geometry.dispose();
@@ -257,7 +302,11 @@ export function GlobeExplorer({ locations, selectedLocationId, onSelectLocation 
       renderer.dispose();
       renderer.domElement.remove();
     };
-  }, [locations, selectedLocationId, onSelectLocation]);
+  }, [locations]);
+
+  useEffect(() => {
+    sceneStateRef.current?.updateSelection(selectedLocationId);
+  }, [selectedLocationId, locations]);
 
   return (
     <div className="globe-wrap" ref={mountRef}>
@@ -281,6 +330,39 @@ function latLngToVector3(lat: number, lng: number, radius: number) {
   );
 }
 
+function getFocusQuaternion(location: SuperWingsLocation, camera: THREE.PerspectiveCamera) {
+  const locationNormal = latLngToVector3(location.coordinates.lat, location.coordinates.lng, 1).normalize();
+  const localNorth = getNorthTangent(location.coordinates.lat, location.coordinates.lng);
+  const localEast = new THREE.Vector3().crossVectors(localNorth, locationNormal).normalize();
+
+  const cameraNormal = camera.position.clone().normalize();
+  const cameraUp = new THREE.Vector3(0, 1, 0).applyQuaternion(camera.quaternion);
+  let screenNorth = cameraUp.clone().projectOnPlane(cameraNormal).normalize();
+
+  if (screenNorth.lengthSq() < 0.0001) {
+    screenNorth = new THREE.Vector3(0, 1, 0).projectOnPlane(cameraNormal).normalize();
+  }
+
+  const screenEast = new THREE.Vector3().crossVectors(screenNorth, cameraNormal).normalize();
+  const localBasis = new THREE.Matrix4().makeBasis(localEast, localNorth, locationNormal);
+  const screenBasis = new THREE.Matrix4().makeBasis(screenEast, screenNorth, cameraNormal);
+  const localQuaternion = new THREE.Quaternion().setFromRotationMatrix(localBasis);
+  const screenQuaternion = new THREE.Quaternion().setFromRotationMatrix(screenBasis);
+
+  return screenQuaternion.multiply(localQuaternion.invert());
+}
+
+function getNorthTangent(lat: number, lng: number) {
+  const latRad = THREE.MathUtils.degToRad(lat);
+  const lngRad = THREE.MathUtils.degToRad(lng);
+
+  return new THREE.Vector3(
+    -Math.sin(latRad) * Math.sin(lngRad),
+    Math.cos(latRad),
+    -Math.sin(latRad) * Math.cos(lngRad),
+  ).normalize();
+}
+
 function createRoute(start: THREE.Vector3, end: THREE.Vector3) {
   const control = start.clone().add(end).multiplyScalar(0.5).normalize().multiplyScalar(earthRadius * 1.32);
   const curve = new THREE.QuadraticBezierCurve3(start, control, end);
@@ -293,6 +375,21 @@ function createRoute(start: THREE.Vector3, end: THREE.Vector3) {
       opacity: 0.28,
     }),
   );
+}
+
+function disposeRouteChildren(routes: THREE.Group) {
+  for (const child of [...routes.children]) {
+    routes.remove(child);
+    if (child instanceof THREE.Line) {
+      child.geometry.dispose();
+      const material = child.material;
+      if (Array.isArray(material)) {
+        material.forEach((item) => item.dispose());
+      } else {
+        material.dispose();
+      }
+    }
+  }
 }
 
 function createAtmosphere() {
