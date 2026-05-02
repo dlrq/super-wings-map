@@ -48,6 +48,7 @@ type SuperWingsLocation = {
 - 地点卡片展示地点名、国家/地区、对应动画标题、简介、趣味地理信息和可选观看外链。
 - 不在站内嵌入动画视频；如未来添加链接，仅作为外部跳转字段 `watchUrl`。
 - 视觉素材使用原创地球、航线、图标、地点插画或 CSS/Canvas 效果，不直接抓取或使用官方角色图片。
+- 地球真实贴图使用 NASA Earth Observatory 的 Blue Marble: Next Generation（July topography + bathymetry）素材，发布时保留来源说明。
 - 保持数据层和 UI 分离：新增地点只需要编辑 JSON，不需要改组件逻辑。
 
 ## Test Plan

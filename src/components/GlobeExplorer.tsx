@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import * as THREE from "three";
+import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import type { SuperWingsLocation } from "../types";
 
 type GlobeExplorerProps = {
@@ -10,6 +11,7 @@ type GlobeExplorerProps = {
 
 const earthRadius = 2.18;
 const markerRadius = 0.055;
+const earthTextureUrl = "/assets/earth-blue-marble-july.jpg";
 
 export function GlobeExplorer({ locations, selectedLocationId, onSelectLocation }: GlobeExplorerProps) {
   const mountRef = useRef<HTMLDivElement | null>(null);
@@ -29,6 +31,21 @@ export function GlobeExplorer({ locations, selectedLocationId, onSelectLocation 
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     mount.appendChild(renderer.domElement);
 
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.08;
+    controls.enablePan = false;
+    controls.enableZoom = true;
+    controls.enableRotate = true;
+    controls.autoRotate = true;
+    controls.autoRotateSpeed = 0.55;
+    controls.minDistance = 4.25;
+    controls.maxDistance = 7.6;
+    controls.rotateSpeed = 0.62;
+    controls.zoomSpeed = 0.78;
+    controls.touches.ONE = THREE.TOUCH.ROTATE;
+    controls.touches.TWO = THREE.TOUCH.DOLLY_ROTATE;
+
     const rootGroup = new THREE.Group();
     rootGroup.rotation.x = -0.18;
     rootGroup.rotation.y = -0.62;
@@ -46,16 +63,47 @@ export function GlobeExplorer({ locations, selectedLocationId, onSelectLocation 
     const glow = createAtmosphere();
     scene.add(glow);
 
+    let earthTexture: THREE.Texture | null = null;
+    let isDisposed = false;
     const globe = new THREE.Mesh(
-      new THREE.SphereGeometry(earthRadius, 96, 96),
+      new THREE.SphereGeometry(earthRadius, 96, 96, -Math.PI / 2),
       new THREE.MeshPhongMaterial({
-        color: 0x176cad,
-        emissive: 0x061f45,
-        shininess: 22,
-        specular: 0x78d8ff,
+        color: 0x174c79,
+        emissive: 0x020d1b,
+        emissiveIntensity: 0.08,
+        shininess: 26,
+        specular: 0x365f82,
       }),
     );
     rootGroup.add(globe);
+
+    const textureLoader = new THREE.TextureLoader();
+    textureLoader.load(
+      earthTextureUrl,
+      (texture) => {
+        if (isDisposed) {
+          texture.dispose();
+          return;
+        }
+
+        texture.colorSpace = THREE.SRGBColorSpace;
+        texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
+        texture.wrapS = THREE.RepeatWrapping;
+        texture.wrapT = THREE.ClampToEdgeWrapping;
+        earthTexture = texture;
+
+        const material = globe.material as THREE.MeshPhongMaterial;
+        material.map = texture;
+        material.color.set(0xffffff);
+        material.emissive.set(0x010712);
+        material.emissiveIntensity = 0.04;
+        material.needsUpdate = true;
+      },
+      undefined,
+      (error) => {
+        console.error("Failed to load earth texture.", error);
+      },
+    );
 
     const grid = new THREE.Mesh(
       new THREE.SphereGeometry(earthRadius + 0.006, 48, 28),
@@ -67,9 +115,6 @@ export function GlobeExplorer({ locations, selectedLocationId, onSelectLocation 
       }),
     );
     rootGroup.add(grid);
-
-    const continents = createContinentHints();
-    rootGroup.add(continents);
 
     const routes = new THREE.Group();
     if (selectedLocation && selectedPoint) {
@@ -116,7 +161,7 @@ export function GlobeExplorer({ locations, selectedLocationId, onSelectLocation 
     const labels = createLabelLayer(mount, locations, rootGroup, camera);
     const raycaster = new THREE.Raycaster();
     const pointer = new THREE.Vector2();
-    const dragState = { active: false, x: 0, y: 0, startX: 0, startY: 0 };
+    const dragState = { active: false, startX: 0, startY: 0 };
     let animationFrame = 0;
 
     const resize = () => {
@@ -130,9 +175,7 @@ export function GlobeExplorer({ locations, selectedLocationId, onSelectLocation 
     };
 
     const animate = () => {
-      if (!dragState.active) {
-        rootGroup.rotation.y += 0.0015;
-      }
+      controls.update();
       routes.children.forEach((child, index) => {
         const material = (child as THREE.Line).material as THREE.LineBasicMaterial;
         material.opacity = 0.22 + Math.sin(Date.now() * 0.002 + index) * 0.08;
@@ -155,31 +198,17 @@ export function GlobeExplorer({ locations, selectedLocationId, onSelectLocation 
     const handlePointerDown = (event: PointerEvent) => {
       const point = getPointer(event);
       dragState.active = true;
-      dragState.x = point.x;
-      dragState.y = point.y;
       dragState.startX = point.x;
       dragState.startY = point.y;
-      renderer.domElement.setPointerCapture(event.pointerId);
     };
 
-    const handlePointerMove = (event: PointerEvent) => {
+    const handlePointerUp = (event: PointerEvent) => {
       if (!dragState.active) {
         return;
       }
       const point = getPointer(event);
-      rootGroup.rotation.y += (point.x - dragState.x) * 0.006;
-      rootGroup.rotation.x = clamp(rootGroup.rotation.x + (point.y - dragState.y) * 0.004, -1.1, 1.1);
-      dragState.x = point.x;
-      dragState.y = point.y;
-    };
-
-    const handlePointerUp = (event: PointerEvent) => {
-      const point = getPointer(event);
       const moved = Math.abs(point.x - dragState.startX) + Math.abs(point.y - dragState.startY);
       dragState.active = false;
-      if (renderer.domElement.hasPointerCapture(event.pointerId)) {
-        renderer.domElement.releasePointerCapture(event.pointerId);
-      }
 
       if (moved > 8) {
         return;
@@ -197,29 +226,21 @@ export function GlobeExplorer({ locations, selectedLocationId, onSelectLocation 
       }
     };
 
-    const handleWheel = (event: WheelEvent) => {
-      event.preventDefault();
-      camera.position.z = clamp(camera.position.z + event.deltaY * 0.004, 4.4, 7.4);
-      labels.update();
-    };
-
     resize();
     animate();
     window.addEventListener("resize", resize);
     renderer.domElement.addEventListener("pointerdown", handlePointerDown);
-    renderer.domElement.addEventListener("pointermove", handlePointerMove);
     renderer.domElement.addEventListener("pointerup", handlePointerUp);
     renderer.domElement.addEventListener("pointercancel", handlePointerUp);
-    renderer.domElement.addEventListener("wheel", handleWheel, { passive: false });
 
     return () => {
+      isDisposed = true;
       window.cancelAnimationFrame(animationFrame);
       window.removeEventListener("resize", resize);
       renderer.domElement.removeEventListener("pointerdown", handlePointerDown);
-      renderer.domElement.removeEventListener("pointermove", handlePointerMove);
       renderer.domElement.removeEventListener("pointerup", handlePointerUp);
       renderer.domElement.removeEventListener("pointercancel", handlePointerUp);
-      renderer.domElement.removeEventListener("wheel", handleWheel);
+      controls.dispose();
       labels.destroy();
       scene.traverse((object) => {
         if (object instanceof THREE.Mesh || object instanceof THREE.Line) {
@@ -232,6 +253,7 @@ export function GlobeExplorer({ locations, selectedLocationId, onSelectLocation 
           }
         }
       });
+      earthTexture?.dispose();
       renderer.dispose();
       renderer.domElement.remove();
     };
@@ -241,7 +263,7 @@ export function GlobeExplorer({ locations, selectedLocationId, onSelectLocation 
     <div className="globe-wrap" ref={mountRef}>
       <div className="globe-hud" aria-hidden="true">
         <span>拖动旋转</span>
-        <span>滚轮缩放</span>
+        <span>滚轮 / 双指缩放</span>
         <span>点击地点</span>
       </div>
     </div>
@@ -285,38 +307,6 @@ function createAtmosphere() {
   );
 }
 
-function createContinentHints() {
-  const group = new THREE.Group();
-  const hints = [
-    { lat: 34, lng: 103, sx: 0.88, sy: 0.34, rz: -0.4 },
-    { lat: 48, lng: 12, sx: 0.5, sy: 0.22, rz: 0.2 },
-    { lat: 5, lng: 20, sx: 0.56, sy: 0.6, rz: -0.1 },
-    { lat: 38, lng: -98, sx: 0.72, sy: 0.32, rz: 0.15 },
-    { lat: -16, lng: -60, sx: 0.42, sy: 0.68, rz: 0.25 },
-    { lat: -25, lng: 133, sx: 0.5, sy: 0.28, rz: -0.2 },
-  ];
-
-  for (const hint of hints) {
-    const point = latLngToVector3(hint.lat, hint.lng, earthRadius + 0.012);
-    const land = new THREE.Mesh(
-      new THREE.CircleGeometry(0.36, 30),
-      new THREE.MeshBasicMaterial({
-        color: 0x5bd09f,
-        transparent: true,
-        opacity: 0.34,
-        side: THREE.DoubleSide,
-      }),
-    );
-    land.position.copy(point);
-    land.scale.set(hint.sx, hint.sy, 1);
-    land.lookAt(new THREE.Vector3(0, 0, 0));
-    land.rotateZ(hint.rz);
-    group.add(land);
-  }
-
-  return group;
-}
-
 function createLabelLayer(
   mount: HTMLDivElement,
   locations: SuperWingsLocation[],
@@ -356,8 +346,4 @@ function createLabelLayer(
       labels.forEach((label) => label.element.remove());
     },
   };
-}
-
-function clamp(value: number, min: number, max: number) {
-  return Math.min(max, Math.max(min, value));
 }
