@@ -10,7 +10,8 @@ type GlobeExplorerProps = {
 };
 
 type MarkerObjects = {
-  marker: THREE.Mesh<THREE.SphereGeometry, THREE.MeshBasicMaterial>;
+  marker: THREE.Mesh<THREE.CircleGeometry, THREE.MeshBasicMaterial>;
+  markerBaseScale: number;
   markerMaterial: THREE.MeshBasicMaterial;
   pulseMaterial: THREE.MeshBasicMaterial;
 };
@@ -20,7 +21,7 @@ type GlobeSceneState = {
 };
 
 const earthRadius = 2.18;
-const markerRadius = 0.055;
+const markerRadius = 0.028;
 const earthTextureUrl = "/assets/earth-blue-marble-july.jpg";
 
 export function GlobeExplorer({ locations, selectedLocationId, onSelectLocation }: GlobeExplorerProps) {
@@ -126,13 +127,19 @@ export function GlobeExplorer({ locations, selectedLocationId, onSelectLocation 
     const markers = new THREE.Group();
     const markerObjectsByLocationId = new Map<string, MarkerObjects>();
     for (const location of locations) {
-      const point = latLngToVector3(location.coordinates.lat, location.coordinates.lng, earthRadius + 0.05);
-      const markerMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff });
+      const point = latLngToVector3(location.coordinates.lat, location.coordinates.lng, earthRadius + 0.035);
+      const markerMaterial = new THREE.MeshBasicMaterial({
+        color: 0xffffff,
+        transparent: true,
+        opacity: 0.86,
+        side: THREE.DoubleSide,
+      });
       const marker = new THREE.Mesh(
-        new THREE.SphereGeometry(markerRadius, 20, 20),
+        new THREE.CircleGeometry(markerRadius, 28),
         markerMaterial,
       );
       marker.position.copy(point);
+      marker.lookAt(new THREE.Vector3(0, 0, 0));
       marker.userData.locationId = location.id;
       markerByObjectId.set(marker.id, location.id);
       markers.add(marker);
@@ -140,19 +147,24 @@ export function GlobeExplorer({ locations, selectedLocationId, onSelectLocation 
       const pulseMaterial = new THREE.MeshBasicMaterial({
         color: 0x8be9ff,
         transparent: true,
-        opacity: 0.38,
+        opacity: 0.28,
         side: THREE.DoubleSide,
       });
       const pulse = new THREE.Mesh(
-        new THREE.RingGeometry(markerRadius * 1.7, markerRadius * 2.55, 36),
+        new THREE.RingGeometry(markerRadius * 1.9, markerRadius * 2.3, 40),
         pulseMaterial,
       );
-      pulse.position.copy(point.clone().multiplyScalar(1.002));
+      pulse.position.copy(point.clone().multiplyScalar(1.001));
       pulse.lookAt(new THREE.Vector3(0, 0, 0));
       pulse.userData.locationId = location.id;
       markerByObjectId.set(pulse.id, location.id);
       markers.add(pulse);
-      markerObjectsByLocationId.set(location.id, { marker, markerMaterial, pulseMaterial });
+      markerObjectsByLocationId.set(location.id, {
+        marker,
+        markerBaseScale: 1,
+        markerMaterial,
+        pulseMaterial,
+      });
     }
     rootGroup.add(markers);
 
@@ -161,10 +173,11 @@ export function GlobeExplorer({ locations, selectedLocationId, onSelectLocation 
 
       for (const [locationId, markerObjects] of markerObjectsByLocationId) {
         const isSelected = locationId === selectedLocation?.id;
-        markerObjects.marker.scale.setScalar(isSelected ? 1.55 : 1);
+        markerObjects.marker.scale.setScalar(isSelected ? markerObjects.markerBaseScale * 1.18 : markerObjects.markerBaseScale);
         markerObjects.markerMaterial.color.set(isSelected ? 0xffcf4a : 0xffffff);
+        markerObjects.markerMaterial.opacity = isSelected ? 0.96 : 0.82;
         markerObjects.pulseMaterial.color.set(isSelected ? 0xffcf4a : 0x8be9ff);
-        markerObjects.pulseMaterial.opacity = isSelected ? 0.8 : 0.38;
+        markerObjects.pulseMaterial.opacity = isSelected ? 0.72 : 0.24;
       }
 
       disposeRouteChildren(routes);
